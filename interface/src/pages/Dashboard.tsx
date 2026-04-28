@@ -1,21 +1,35 @@
 import { useEffect, useState } from "react";
 import MonthYearSelect from "../components/MonthYearSelect";
-import { getTransactions } from "../services/transactionService";
+import {
+  getTransactions,
+  getTransactionsSummary,
+} from "../services/transactionService";
+import type { TransactionSummary } from "../types/transactions";
+import Card from "../components/Card";
+import { AArrowUp } from "lucide-react";
+
+const initialSummary: TransactionSummary = {
+  balance: 0,
+  totalExpenses: 0,
+  totalIncomes: 0,
+  expensesByCategory: [],
+};
 
 const Dashboard = () => {
   const currentDate = new Date();
   const [year, setYear] = useState<number>(currentDate.getFullYear());
   const [month, setMonth] = useState<number>(currentDate.getMonth() + 1);
+  const [summary, setSummary] = useState<TransactionSummary>(initialSummary);
 
   useEffect(() => {
-    async function getTransactionsUser() {
-      const response = await getTransactions();
+    async function loadTransactionsSummary() {
+      const response = await getTransactionsSummary(month, year);
 
-      console.log(response);
+      setSummary(response);
     }
 
-    getTransactionsUser();
-  }, []);
+    loadTransactionsSummary();
+  }, [month, year]);
 
   return (
     <div className="container-app py-6">
@@ -28,6 +42,11 @@ const Dashboard = () => {
           onYearChange={setYear}
         />
       </div>
+      <Card glowEffect hover title="despesas" icon={<AArrowUp />}>
+        <div>
+          <p className="font-bold text-primary-500">R$ 2000</p>
+        </div>
+      </Card>
     </div>
   );
 };
