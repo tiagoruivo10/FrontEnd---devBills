@@ -1,18 +1,31 @@
-import { useEffect } from "react";
-import { api } from "../services/Api";
+import { useEffect, useState } from "react";
+import { api } from "../services/api";
+import MonthYearSelect from "../components/MonthYearSelect";
 
 const Dashboard = () => {
+  const currentDate = new Date();
+  const [year, setYear] = useState<number>(currentDate.getFullYear());
+  const [month, setMonth] = useState<number>(currentDate.getMonth() + 1);
+
   useEffect(() => {
     async function getTransactions() {
-      const response = await api.get('/transactions');
+      const response = await api.get("/transactions");
     }
 
     getTransactions();
   }, []);
 
   return (
-    <div>
-      <h1>dashboard</h1>
+    <div className="container-app py-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <h1 className="text-2xl font-bold mb-4 md:mb-0">dashboard</h1>
+        <MonthYearSelect
+          month={month}
+          year={year}
+          onMonthChange={setMonth}
+          onYearChange={setYear}
+        />
+      </div>
     </div>
   );
 };
