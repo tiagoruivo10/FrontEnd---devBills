@@ -1,10 +1,26 @@
 import { useEffect, useState } from "react";
 import MonthYearSelect from "../components/MonthYearSelect";
-import { getTransactionsSummary } from "../services/transactionService";
-import type { TransactionSummary } from "../types/transactions";
+import {
+  getTransactionsMonthly,
+  getTransactionsSummary,
+} from "../services/transactionService";
+import type { MonthlyItem, TransactionSummary } from "../types/transactions";
 import Card from "../components/Card";
-import { ArrowUp, Wallet } from "lucide-react";
+import { ArrowUp, Calendar, TrendingUp, Wallet } from "lucide-react";
 import { formatCurrency } from "../utils/formatters";
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  BarChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Legend,
+  Bar,
+} from "recharts";
 
 const initialSummary: TransactionSummary = {
   balance: 0,
@@ -13,11 +29,17 @@ const initialSummary: TransactionSummary = {
   expensesByCategory: [],
 };
 
+interface ChartLabelProps {
+  categoryName: string;
+  percent: number;
+}
+
 const Dashboard = () => {
   const currentDate = new Date();
   const [year, setYear] = useState<number>(currentDate.getFullYear());
   const [month, setMonth] = useState<number>(currentDate.getMonth() + 1);
   const [summary, setSummary] = useState<TransactionSummary>(initialSummary);
+  const [monthlyItemsData, setMonthlyItemsData] = useState<MonthlyItem[]>([]);
 
   useEffect(() => {
     async function loadTransactionsSummary() {
@@ -28,6 +50,27 @@ const Dashboard = () => {
 
     loadTransactionsSummary();
   }, [month, year]);
+
+  useEffect(() => {
+    async function loadTransactionsMonthly() {
+      const response = await getTransactionsMonthly(month, year, 4);
+
+      setMonthlyItemsData(response.history);
+    }
+
+    loadTransactionsMonthly();
+  }, [month, year]);
+
+  const RenderPieChatLabel = ({
+    categoryName,
+    percent,
+  }: ChartLabelProps): string => {
+    return `${categoryName}: ${(percent * 100).toFixed(1)}%`;
+  };
+
+  const formatToolTipValue = (value: number | string): string => {
+    return formatCurrency(typeof value === "number" ? value : 0);
+  };
 
   return (
     <div className="container-app py-6">
@@ -40,6 +83,7 @@ const Dashboard = () => {
           onYearChange={setYear}
         />
       </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card
           icon={<Wallet size={20} className="text-primary-500" />}
@@ -50,7 +94,7 @@ const Dashboard = () => {
           <p
             className={`text-2xl font-semibold mt-2
           
-          ${summary.balance > 0 ? "text-primary-500" : "text-red-600"}`}
+          ${summary.balance > 0 ? "text-primary-500" : "text-red-300"}`}
           >
             {formatCurrency(summary.balance)}
           </p>
@@ -74,6 +118,85 @@ const Dashboard = () => {
           <p className="text-2xl font-semibold mt-2 text-red-600">
             {formatCurrency(summary.totalExpenses)}
           </p>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 mt-3">
+        <Card
+          icon={<TrendingUp size={20} className="text-primary-500" />}
+          title="Despesas por Categoria"
+          className="min-h-80"
+          hover
+        >
+          {summary.expensesByCategory.length > 0 ? (
+            <div className="h-72 mt-4 ">
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie
+                    data={summary.expensesByCategory}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    dataKey="amount"
+                    nameKey="categoryName"
+                    label={RenderPieChatLabel}
+                  >
+                    {summary.expensesByCategory.map((entry) => (
+                      <Cell key={entry.categoryId} fill={entry.categoryColor} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={formatToolTipValue} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-64 text-gray-500">
+              Nenhuma despesa registrada nesse período
+            </div>
+          )}
+        </Card>
+        <Card
+          icon={<Calendar size={20} className="text-primary-500" />}
+          title="Histórico Mensal"
+          className="min-h-80 p-2.5"
+        >
+          <div className="h-72 mt-4">
+            {monthlyItemsData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyItemsData} margin={{ left: 40 }}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="rgba(255,255,255,0.1)"
+                  />
+                  <XAxis
+                    dataKey="name"
+                    stroke="#94A3B8"
+                    tick={{ style: { textTransform: "capitalize" } }}
+                  />
+                  <YAxis
+                    stroke="#94A3B8"
+                    tickFormatter={formatCurrency}
+                    tick={{ style: { fontSize: 14 } }}
+                  />
+                  <Tooltip
+                    formatter={formatCurrency}
+                    contentStyle={{
+                      backgroundColor: "#1A1A1A",
+                      borderColor: "#2A2A2A",
+                    }}
+                    labelStyle={{ color: "#f8f8f8" }}
+                  />
+                  <Legend />
+                  <Bar dataKey="expenses" name="Despesas" fill="#FF6384" />
+                  <Bar dataKey="income" name="Receitas" fill="#37E359" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-64 text-gray-500">
+                Nenhuma despesa registrada nesse período
+              </div>
+            )}
+          </div>
         </Card>
       </div>
     </div>

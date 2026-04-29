@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onAuthStateChanged(
       firebaseAuth,
       (user) => {
-        console.log(user?.email || "Deslogado");
+        console.log(user);
 
         if (user) {
           setAuthState({
