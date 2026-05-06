@@ -12,9 +12,13 @@ import { useEffect, useState } from "react";
 import Input from "../components/Input";
 import Card from "../components/Card";
 import type { Transaction } from "../types/transactions";
-import { getTransactions } from "../services/transactionService";
+import {
+  deleteTransactions,
+  getTransactions,
+} from "../services/transactionService";
 import Button from "../components/Button";
 import { formatCurrency, FormatDate } from "../utils/formatters";
+import { toast } from "react-toastify";
 
 const Transactions = () => {
   const currentDate = new Date();
@@ -38,7 +42,25 @@ const Transactions = () => {
     }
   };
 
-  const handleDelete = (id: string): void => {};
+  const handleDelete = async (id: string): Promise<void> => {
+    try {
+      setDeletingId(id);
+      await deleteTransactions(id);
+      toast.success("Transação deletada com sucesso");
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
+    } catch (err) {
+      console.error(err);
+      toast.error("Falha ao deletar Transação");
+    } finally {
+      setDeletingId("");
+    }
+  };
+
+  const confirmDelete = (id: string): void => {
+    if (window.confirm("Tem certeza de que deseja excluir esta transação?")) {
+      handleDelete(id);
+    }
+  };
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -103,7 +125,7 @@ const Transactions = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="divide-y divide-gray-700 min-h-full">
+            <table className="divide-y divide-gray-700 min-h-full w-full">
               <thead>
                 <tr>
                   <th
@@ -156,11 +178,11 @@ const Transactions = () => {
                       </div>
                     </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-4 whitespace-nowrap">
                       {FormatDate(transaction.date)}
                     </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div
                           className="w-2 h-2 rounded-full mr-2"
@@ -174,7 +196,7 @@ const Transactions = () => {
                       </div>
                     </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-4 whitespace-nowrap">
                       <span
                         className={`${transaction.type === "income" ? "text-primary-500" : "text-red-500"}`}
                       >
@@ -182,10 +204,10 @@ const Transactions = () => {
                       </span>
                     </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap cursor-pointer">
+                    <td className="px-3 py-4 whitespace-nowrap cursor-pointer">
                       <button
                         type="button"
-                        onClick={() => handleDelete(transaction.id)}
+                        onClick={() => confirmDelete(transaction.id)}
                         className="text-red-500 hover:text-red-400 rounded-full cursor-pointer"
                         disabled={deletingId === transaction.id}
                       >
