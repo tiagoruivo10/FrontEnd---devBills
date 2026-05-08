@@ -36,6 +36,7 @@ const TransactionsForm = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [error, setError] = useState<string | null>(null);
+  const [invalidFields, setInvalidFields] = useState<string[]>([]);
   const formId = useId();
   const navigate = useNavigate();
 
@@ -53,21 +54,33 @@ const TransactionsForm = () => {
   );
 
   const validateForm = (): boolean => {
-    if (
-      !formData.description ||
-      !formData.amount ||
-      !formData.date ||
-      !formData.categoryId
-    ) {
-      setError("Preencha todos os campos");
+    const newInvalidFields: string[] = [];
+
+    // Verifica cada campo individualmente
+    if (!formData.description) newInvalidFields.push("description");
+    if (!formData.amount || formData.amount <= 0)
+      newInvalidFields.push("amount");
+    if (!formData.date) newInvalidFields.push("date");
+    if (!formData.categoryId) newInvalidFields.push("categoryId");
+
+    setInvalidFields(newInvalidFields);
+
+    if (newInvalidFields.length > 0) {
+      if (
+        newInvalidFields.includes("amount") &&
+        formData.amount <= 0 &&
+        formData.description &&
+        formData.date &&
+        formData.categoryId
+      ) {
+        setError("O valor deve ser maior que 0");
+      } else {
+        setError("Preencha todos os campos destacados");
+      }
       return false;
     }
 
-    if (formData.amount <= 0) {
-      setError("O valor deve ser maior que 0");
-      return false;
-    }
-
+    setError(null);
     return true;
   };
 
@@ -80,6 +93,10 @@ const TransactionsForm = () => {
   ): void => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    if (invalidFields.includes(name)) {
+      setInvalidFields((prev) => prev.filter((field) => field !== name));
+    }
   };
 
   const handleSubmit = async (event: FormEvent): Promise<void> => {
@@ -89,12 +106,16 @@ const TransactionsForm = () => {
       if (!validateForm()) {
         return;
       }
-    } catch (err) {}
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleCancel = () => {
     navigate("/transacoes");
   };
+
+  const hasError = (fieldName: string) => invalidFields.includes(fieldName);
 
   return (
     <div className="container-app py-8">
@@ -125,6 +146,7 @@ const TransactionsForm = () => {
               value={formData.description}
               onChange={handleChange}
               placeholder="Ex: Supermercado, Salário, etc..."
+              hasError={hasError("description")}
             />
 
             <Input
@@ -136,7 +158,7 @@ const TransactionsForm = () => {
               onChange={handleChange}
               placeholder="R$ 0,00"
               icon={<DollarSign className="w-4 h-4" />}
-              required
+              hasError={hasError("amount")}
             />
 
             <Input
@@ -146,6 +168,7 @@ const TransactionsForm = () => {
               value={formData.date}
               onChange={handleChange}
               icon={<Calendar className="w-4 h-4" />}
+              hasError={hasError("amount")}
             />
 
             <Select
@@ -154,6 +177,7 @@ const TransactionsForm = () => {
               value={formData.categoryId}
               onChange={handleChange}
               icon={<Tag className="w-4 h-4" />}
+              hasError={hasError("categoryId")}
               options={[
                 { value: "", label: "Selecione uma Categoria" },
                 ...filteredCategories.map((category) => ({
