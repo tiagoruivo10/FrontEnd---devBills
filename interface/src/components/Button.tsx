@@ -8,7 +8,7 @@ type ButtonVariants =
   | "danger";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  children: ReactNode;
+  children: ReactNode;  
   variant?: ButtonVariants;
   fullWidth?: boolean;
   isLoading?: boolean;
