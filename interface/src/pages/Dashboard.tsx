@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import MonthYearSelect from "../components/MonthYearSelect";
 import {
   getTransactionsMonthly,
@@ -20,7 +20,9 @@ import {
   YAxis,
   Legend,
   Bar,
+  type PieLabelRenderProps,
 } from "recharts";
+import type { ValueType } from "recharts/types/component/DefaultTooltipContent";
 
 const initialSummary: TransactionSummary = {
   balance: 0,
@@ -28,11 +30,6 @@ const initialSummary: TransactionSummary = {
   totalIncomes: 0,
   expensesByCategory: [],
 };
-
-interface ChartLabelProps {
-  categoryName: string;
-  percent: number;
-}
 
 const Dashboard = () => {
   const currentDate = new Date();
@@ -61,14 +58,13 @@ const Dashboard = () => {
     loadTransactionsMonthly();
   }, [month, year]);
 
-  const RenderPieChatLabel = ({
-    categoryName,
-    percent,
-  }: ChartLabelProps): string => {
+  const RenderPieChatLabel = (props: PieLabelRenderProps): string => {
+    const categoryName = props.name ?? "";
+    const percent = props.percent ?? 0;
     return `${categoryName}: ${(percent * 100).toFixed(1)}%`;
   };
 
-  const formatToolTipValue = (value: number | string): string => {
+  const formatToolTipValue = (value: ValueType | undefined): ReactNode => {
     return formatCurrency(typeof value === "number" ? value : 0);
   };
 
@@ -179,7 +175,9 @@ const Dashboard = () => {
                     tick={{ style: { fontSize: 14 } }}
                   />
                   <Tooltip
-                    formatter={formatCurrency}
+                    formatter={(value: ValueType | undefined) =>
+                      formatCurrency(typeof value === "number" ? value : 0)
+                    }
                     contentStyle={{
                       backgroundColor: "#1A1A1A",
                       borderColor: "#2A2A2A",
