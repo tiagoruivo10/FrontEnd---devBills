@@ -5,7 +5,10 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react";
-import type { TransactionType } from "../types/transactions";
+import type {
+  CreateTransactionDTO,
+  TransactionType,
+} from "../types/transactions";
 import { getCategories } from "../services/categoryService";
 import type { Category } from "../types/category";
 import Card from "../components/Card";
@@ -15,6 +18,8 @@ import { AlertCircle, Calendar, DollarSign, Save, Tag } from "lucide-react";
 import Select from "../components/Select";
 import Button from "../components/Button";
 import { useNavigate } from "react-router";
+import { createTransaction } from "../services/transactionService";
+import { toast } from "react-toastify";
 
 interface FormData {
   description: string;
@@ -56,7 +61,6 @@ const TransactionsForm = () => {
   const validateForm = (): boolean => {
     const newInvalidFields: string[] = [];
 
-    // Verifica cada campo individualmente
     if (!formData.description) newInvalidFields.push("description");
     if (!formData.amount || formData.amount <= 0)
       newInvalidFields.push("amount");
@@ -101,13 +105,27 @@ const TransactionsForm = () => {
 
   const handleSubmit = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
+    setError(null);
 
     try {
       if (!validateForm()) {
         return;
       }
+
+      const transactionData: CreateTransactionDTO = {
+        description: formData.description,
+        amount: formData.amount,
+        categoryId: formData.categoryId,
+        type: formData.type,
+        date: new Date(formData.date).toISOString(),
+      };
+
+      await createTransaction(transactionData);
+      toast.success("Transação adicionada com sucesso!");
+      navigate("/transacoes");
     } catch (err) {
       console.error(err);
+      toast.error("Falha ao adicionar Transação!");
     }
   };
 
