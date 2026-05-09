@@ -23,7 +23,7 @@ import { toast } from "react-toastify";
 
 interface FormData {
   description: string;
-  amount: number;
+  amount: number | "";
   date: string;
   categoryId: string;
   type: TransactionType;
@@ -31,7 +31,7 @@ interface FormData {
 
 const initialFormData: FormData = {
   description: "",
-  amount: 0,
+  amount: "",
   date: "",
   categoryId: "",
   type: "expense",
@@ -41,6 +41,7 @@ const TransactionsForm = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
   const [invalidFields, setInvalidFields] = useState<string[]>([]);
   const formId = useId();
   const navigate = useNavigate();
@@ -62,7 +63,7 @@ const TransactionsForm = () => {
     const newInvalidFields: string[] = [];
 
     if (!formData.description) newInvalidFields.push("description");
-    if (!formData.amount || formData.amount <= 0)
+    if (!formData.amount || Number(formData.amount) <= 0)
       newInvalidFields.push("amount");
     if (!formData.date) newInvalidFields.push("date");
     if (!formData.categoryId) newInvalidFields.push("categoryId");
@@ -72,7 +73,7 @@ const TransactionsForm = () => {
     if (newInvalidFields.length > 0) {
       if (
         newInvalidFields.includes("amount") &&
-        formData.amount <= 0 &&
+        Number(formData.amount) <= 0 &&
         formData.description &&
         formData.date &&
         formData.categoryId
@@ -105,6 +106,7 @@ const TransactionsForm = () => {
 
   const handleSubmit = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
+    setLoading(true);
     setError(null);
 
     try {
@@ -114,10 +116,10 @@ const TransactionsForm = () => {
 
       const transactionData: CreateTransactionDTO = {
         description: formData.description,
-        amount: formData.amount,
+        amount: Number(formData.amount),
         categoryId: formData.categoryId,
         type: formData.type,
-        date: new Date(formData.date).toISOString(),
+        date: new Date(`${formData.date}T00:00:00`).toISOString(),
       };
 
       await createTransaction(transactionData);
@@ -126,6 +128,8 @@ const TransactionsForm = () => {
     } catch (err) {
       console.error(err);
       toast.error("Falha ao adicionar Transação!");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -206,14 +210,27 @@ const TransactionsForm = () => {
             />
 
             <div className="flex justify-end space-x-3 mt-2">
-              <Button variant="outline" onClick={handleCancel} type="button">
+              <Button
+                variant="outline"
+                onClick={handleCancel}
+                type="button"
+                disabled={loading}
+              >
                 Cancelar
               </Button>
               <Button
+                disabled={loading}
                 type="submit"
                 variant={formData.type === "expense" ? "danger" : "success"}
               >
-                <Save className="w-4 h-4 mr-2" /> Salvar
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="w-4 h-4 border-4 border-gray-700 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  <Save className="w-4 h-4 mr-2" />
+                )}
+                Salvar
               </Button>
             </div>
           </form>
